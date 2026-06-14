@@ -569,8 +569,8 @@
       <p class="hero-subheadline">The only platform that manages your entire AP workload as one intelligent plan &mdash; and automatically rebuilds your schedule when life gets in the way.</p>
 
       <div class="hero-form-wrap">
-        <!-- OWNER: Replace REPLACE_WITH_YOUR_ID with your Formspree form ID -->
-        <form id="hero-form" action="https://formspree.io/f/REPLACE_WITH_YOUR_ID" method="POST" novalidate>
+        <!-- OWNER: Signups are saved to your Supabase "leads" table. Set SUPABASE_URL and SUPABASE_ANON_KEY in the <script> below. -->
+        <form id="hero-form" novalidate>
           <label for="hero-email" class="form-label-text">Enter your email to join the waitlist &rarr;</label>
           <div class="form-row" id="hero-form-row">
             <input type="email" id="hero-email" name="email" class="email-input" placeholder="your@email.com" autocomplete="email" required>
@@ -789,8 +789,8 @@
       <div class="bottom-cta-inner">
         <h2 class="bottom-cta-headline">May comes for everyone. Be ready.</h2>
         <p class="bottom-cta-sub">Join the waitlist today and get free early access when APace launches.</p>
-        <!-- OWNER: Replace REPLACE_WITH_YOUR_ID with your Formspree form ID -->
-        <form id="bottom-form" action="https://formspree.io/f/REPLACE_WITH_YOUR_ID" method="POST" novalidate>
+        <!-- OWNER: Signups are saved to your Supabase "leads" table. Set SUPABASE_URL and SUPABASE_ANON_KEY in the <script> below. -->
+        <form id="bottom-form" novalidate>
           <label for="bottom-email" class="sr-only">Email address</label>
           <div class="form-row" id="bottom-form-row">
             <input type="email" id="bottom-email" name="email" class="email-input" placeholder="your@email.com" autocomplete="email" required>
@@ -840,7 +840,16 @@
       revealObserver.observe(el);
     });
 
-    // Form handling
+    /* ============================================================
+       SUPABASE CONFIG — OWNER: fill these two in.
+       Find them in your Supabase dashboard:
+       Project Settings → API → "Project URL" and "anon public" key.
+       ============================================================ */
+    const SUPABASE_URL = 'https://hlfxdkbqjuvpvervcbdw.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhsZnhka2JxanV2cHZlcnZjYmR3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzOTE0NDksImV4cCI6MjA5Njk2NzQ0OX0.P6sK10ZLlLAdAOMhoauhl32TdG-8c_YFlfnUmebIACU';
+    const LEADS_TABLE = 'leads';
+
+    // Form handling — saves the email to your Supabase "leads" table.
     function setupForm(formId, emailId, rowId, successId, errorId) {
       var form = document.getElementById(formId);
       var emailInput = document.getElementById(emailId);
@@ -860,12 +869,19 @@
         }
 
         try {
-          var res = await fetch(form.action, {
+          var res = await fetch(SUPABASE_URL + '/rest/v1/' + LEADS_TABLE, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+              'apikey': SUPABASE_ANON_KEY,
+              'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+              'Content-Type': 'application/json',
+              'Prefer': 'return=minimal'
+            },
             body: JSON.stringify({ email: email })
           });
-          if (res.ok) {
+
+          // 201 = inserted. 409 = email already exists (treat as success).
+          if (res.ok || res.status === 409) {
             row.style.display = 'none';
             successEl.style.display = 'block';
           } else {
